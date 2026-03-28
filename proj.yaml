@@ -1,12 +1,11 @@
-version: '3.8'
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+  mysql:
+    image: mysql:latest
+    command: --secure-file-priv=""
     ports:
-      - "1433:1433"
+      - "3306:3306"
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=MasterPassword123!
+      - MYSQL_ROOT_PASSWORD=MasterPassword123!
     volumes:
       - ./data:/data
   mongodb:
