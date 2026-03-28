@@ -1,7 +1,7 @@
 import csv
 import random
 import os
-
+#test
 
 CANTIDAD_LECTURAS = 100000000
 CANTIDAD_DISPOSITIVOS = 100000000
