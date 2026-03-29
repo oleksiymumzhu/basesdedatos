@@ -32,3 +32,36 @@ erDiagram
         string Estado
     }
 ```
+
+## 3. Metodología y Parámetros de Evaluación
+Para comprobar cómo se ve afectado el rendimiento al crecer la información, se cargaron tres cantidades de datos sintéticos en ambos motores:
+1. **10,000** (Diez mil registros) - Escenario de prueba inicial.
+2. **1,000,000** (Un millón de registros) - Escenario de carga media.
+3. **100,000,000** (Cien millones de registros) - Escenario de Big Data / Estrés extremo.
+
+**Parámetros evaluados:**
+* **Tiempo de respuesta (Ejecución):** Medido en milisegundos/segundos/minutos, evaluando cuánto tarda el motor en resolver la consulta.
+* **Espacio de almacenamiento:** Medido en Megabytes (MB) para determinar la eficiencia de compresión en disco de cada tecnología.
+
+## 4. Consultas de Prueba
+Se diseñaron 5 consultas específicas para abarcar distintos casos de uso.
+
+**1. Consulta de Cruce (INNER JOIN / Lookup)**
+* **MySQL:** `SELECT * FROM Dispositivo d INNER JOIN Lectura l ON d.ID = l.DispositivoID WHERE d.ID = 16649998;`
+* **MongoDB:** `db.dispositivo.aggregate([{ $match: { ID: 16649998 } }, { $lookup: { from: "lectura", localField: "ID", foreignField: "DispositivoID", as: "historial" } }]);`
+
+**2. Actualización Masiva (UPDATE / updateMany)**
+* **MySQL:** `UPDATE Lectura SET Estado = 'Revisado' WHERE Fecha = '2026-03-27';`
+* **MongoDB:** `db.lectura.updateMany({ Fecha: "2026-03-27" }, { $set: { Estado: "Revisado" } });`
+
+**3. Creación de Índices**
+* **MySQL:** `CREATE INDEX idx_fecha ON Lectura(Fecha);`
+* **MongoDB:** `db.lectura.createIndex({ Fecha: 1 });`
+
+**4. Borrado Masivo (DELETE / deleteMany)**
+* **MySQL:** `DELETE FROM Lectura WHERE Estado = 'Activo';`
+* **MongoDB:** `db.lectura.deleteMany({ Estado: "Activo" });`
+
+**5. Agrupación Matemática (AVG total) (Solo 100 millones)**
+* **MySQL:** `SELECT DispositivoID, COUNT(*) as TotalLecturas, AVG(Valor) as Promedio FROM Lectura GROUP BY DispositivoID;`
+* **MongoDB:** `db.lectura.aggregate([{ $group: { _id: "$DispositivoID", TotalLecturas: { $sum: 1 }, Promedio: { $avg: "$Valor" } } }]);`
