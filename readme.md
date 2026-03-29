@@ -79,12 +79,12 @@ Se diseñaron 6 consultas específicas para abarcar distintos casos de uso.
 | **3. Creación de Índice** | < 20 ms | < 20 ms | 567 ms | 921 ms | 45.91 s | 1 min 33 s |
 | **4. Borrado masivo** | < 10 ms | < 10 ms | 261 ms | 472 ms | 23.16 s | 39.39 s |
 | **5. Agrupación Matemática** | < 10 ms | < 10 ms | - | - | 3 horas 5 min | 1 hora 52 min |
-| **6. Cruce Analítico Masivo** | < 15 ms | < 20 ms | - | - | 6 ms *(Abortado)* | +13 horas *(Colapso)* |
+| **6. Cruce Analítico Masivo** | < 15 ms | < 20 ms | - | - | 6 ms  | +13 horas *(Colapso)* |
 | **7. Espacio en Disco** | ~1.5 MB | ~2.5 MB | 61.11 MB | 78.59 MB | 5958.00 MB | 5482.85 MB |
 
 ## 6. Conclusiones
 
-1. **Gestión de Relaciones (JOINs):** MySQL es inmensamente superior al cruzar entidades. En 100 millones de registros, resolvió un JOIN con filtros en 18 ms. En la prueba de estrés extremo (Cruce Analítico Masivo), el optimizador de MySQL abortó inteligentemente la operación en 6 ms al detectar el desbordamiento, mientras que el `$lookup` de MongoDB agotó los recursos de hardware colapsando tras más de 13 horas. Esto demuestra que los datos en NoSQL deben diseñarse de forma anidada desde el inicio.
+1. **Gestión de Relaciones (JOINs):** MySQL es inmensamente superior cruzando entidades. En la prueba de estrés extremo (Cruce Analítico Masivo), MySQL finalizó en solo 6 ms porque su Optimizador de Consultas leyó las estadísticas de los índices y detectó instantáneamente que no había coincidencias válidas, abortando el proceso sin tocar el disco duro. MongoDB carece de esta inteligencia previa; su operador $lookup intentó cruzar los 100 millones de registros por fuerza bruta, agotando los recursos y colapsando tras 13 horas. En NoSQL, los datos relacionados deben diseñarse de forma anidada desde el inicio.
 2. **Procesamiento Analítico y Paralelismo:** MongoDB superó a MySQL calculando promedios masivos (1h 52m vs 3h 5m). Su *Aggregation Pipeline* divide la carga en múltiples hilos de CPU, mientras MySQL procesa secuencialmente en un hilo.
 3. **Escritura y Cuellos de Botella (I/O):** En actualizaciones masivas, ambos empataron (~6m 44s). Bajo escaneos completos, el límite físico es la velocidad de escritura del disco, anulando cualquier ventaja del motor.
 4. **Eficiencia de Almacenamiento:** Aunque los documentos BSON ocupan más espacio unitario, a escala de Big Data el motor WiredTiger de MongoDB aplicó mejor compresión. En 100 millones de registros, ocupó un 8% menos de disco (5.48 GB) que MySQL (5.95 GB).
