@@ -65,3 +65,23 @@ Se diseñaron 5 consultas específicas para abarcar distintos casos de uso.
 **5. Agrupación Matemática (AVG total) (Solo 100 millones)**
 * **MySQL:** `SELECT DispositivoID, COUNT(*) as TotalLecturas, AVG(Valor) as Promedio FROM Lectura GROUP BY DispositivoID;`
 * **MongoDB:** `db.lectura.aggregate([{ $group: { _id: "$DispositivoID", TotalLecturas: { $sum: 1 }, Promedio: { $avg: "$Valor" } } }]);`
+
+## 5. Resultados de Rendimiento
+
+| Operación Evaluada | MySQL (1 Millón) | MongoDB (1 Millón) | MySQL (100 Millones) | MongoDB (100 Millones) |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Cruce de datos (JOIN específico)** | 9 ms | 76 ms | 18 ms | 140 ms |
+| **2. Actualización masiva (Sin índice)** | 4.28 s | 3.99 s | 6 min 44 s | 6 min 43 s |
+| **3. Creación de Índice** | 567 ms | 921 ms | 45.91 s | 1 min 33 s |
+| **4. Borrado masivo (Full Scan)** | 261 ms | 472 ms | 23.16 s | 39.39 s |
+| **5. Agrupación Matemática Masiva** | - | - | 3 horas 5 min | 1 hora 52 min |
+| **6. Espacio total en Disco** | 61.11 MB | 78.59 MB | 5958.00 MB | 5482.85 MB |
+
+*(Nota: El cruce analítico masivo en 100 millones fue abortado en MySQL por el optimizador en 6 ms, mientras que en MongoDB colapsó los recursos de hardware tras más de 13 horas).*
+
+## 6. Conclusiones
+
+1. **Gestión de Relaciones (JOINs):** MySQL es inmensamente superior al cruzar entidades (18 ms en 100 millones). MongoDB sufre emulando JOINs mediante `$lookup`, requiriendo que los datos en NoSQL se diseñen de forma anidada desde el inicio.
+2. **Procesamiento Analítico y Paralelismo:** MongoDB superó a MySQL calculando promedios masivos (1h 52m vs 3h 5m). Su *Aggregation Pipeline* divide la carga en múltiples hilos de CPU, mientras MySQL procesa secuencialmente en un hilo.
+3. **Escritura y Cuellos de Botella (I/O):** En actualizaciones masivas, ambos empataron (~6m 44s). Bajo escaneos completos, el límite físico es la velocidad de escritura del disco, anulando cualquier ventaja del motor.
+4. **Eficiencia de Almacenamiento:** Aunque los documentos BSON ocupan más espacio unitario, a escala de Big Data el motor WiredTiger de MongoDB aplicó mejor compresión. En 100 millones de registros, ocupó un 8% menos de disco (5.48 GB) que MySQL (5.95 GB).
