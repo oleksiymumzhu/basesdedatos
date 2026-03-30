@@ -88,3 +88,37 @@ Se diseñaron 6 consultas específicas para abarcar distintos casos de uso.
 2. **Procesamiento Analítico y Paralelismo:** MongoDB superó a MySQL calculando promedios masivos (1h 52m vs 3h 5m). Su *Aggregation Pipeline* divide la carga en múltiples hilos de CPU, mientras MySQL procesa secuencialmente en un hilo.
 3. **Escritura y Cuellos de Botella (I/O):** En actualizaciones masivas, ambos empataron (~6m 44s). Bajo escaneos completos, el límite físico es la velocidad de escritura del disco, anulando cualquier ventaja del motor.
 4. **Eficiencia de Almacenamiento:** Aunque los documentos BSON ocupan más espacio unitario, a escala de Big Data el motor WiredTiger de MongoDB aplicó mejor compresión. En 100 millones de registros, ocupó un 8% menos de disco (5.48 GB) que MySQL (5.95 GB).
+
+## 7. Instrucciones de Reproducción (Docker)
+
+Para replicar este entorno de pruebas, se requiere tener instalado **Docker** y **Docker Compose**.
+
+### Paso 1: Generar los datos de prueba
+Antes de levantar los contenedores, ejecuta los scripts de Python para generar los sets de datos sintéticos (archivos `.sql` y `.js`). Asegúrate de tener Python instalado:
+
+```bash
+python3 generar_datos1_000.py
+python3 generar_datos1_000_000.py
+python3 generar_datos100_000_000.py
+```
+
+### Paso 2: Levantar el entorno
+Asegúrate de que los archivos `.sql` y `.js` generados estén dentro de la carpeta `data` junto al archivo `proj.yaml`. Levanta los servicios ejecutando en la terminal:
+
+```bash
+docker compose -f proj.yaml up -d
+```
+
+### Paso 3: Importar datos a MySQL
+Dado que los volúmenes ya están conectados, inyecta los scripts SQL directamente en el contenedor de MySQL. (Puedes cambiar el nombre del archivo `.sql` según el volumen que desees probar):
+
+```bash
+docker compose -f proj.yaml exec mysql sh -c "mysql -uroot -pMasterPassword123! < /data/mysql10000.sql"
+```
+
+### Paso 4: Importar datos a MongoDB
+De forma similar, ejecuta los scripts de JavaScript directamente en el contenedor de MongoDB usando `mongosh`:
+
+```bash
+docker compose -f proj.yaml exec mongodb sh -c "mongosh < /data/mongodb10000.js"
+```
